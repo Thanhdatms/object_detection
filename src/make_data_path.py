@@ -36,7 +36,8 @@ def make_datapath(root_path):
 
 
 if __name__ == "__main__":
-    root_path = './datasets/pascal-voc-2012/VOC2012_train_val/VOC2012_train_val/'
+    root_path = './datasets/VOC2012/'
 
     train_img_list, train_anno_list, val_img_list, val_anno_list = make_datapath(root_path)
+    print(train_img_list[0])
     print(len(train_img_list))
