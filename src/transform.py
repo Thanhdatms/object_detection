@@ -19,8 +19,8 @@ class DataTransform:
                 RandomSampleCrop(),
                 RandomMirror(),
                 ToPercentCoords(),       # convert annotation to [0,1]
-                Resize(size=input_size), # covert image to input size 300
-                SubtractMeans(mean=color_mean)# related to color BGR 
+                Resize(input_size), # covert image to input size 300
+                SubtractMeans(color_mean)# related to color BGR 
             ]),
 
             "val": Compose([
@@ -33,6 +33,7 @@ class DataTransform:
 
     def __call__(self, img, phase, boxes, labels):
         return self.data_transform[phase](img, boxes, labels)
+
     
 if __name__ == "__main__":
     classes = ["aeroplane", "bicycle", "bird",  "boat", "bottle", 
