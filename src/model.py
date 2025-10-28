@@ -1,4 +1,7 @@
 import torch.nn as nn
+from l2norm import L2Norm
+from  default_box import DefaultBox
+
 
 def vgg():
 
@@ -32,7 +35,6 @@ def vgg():
     layers += [pool5, conv6, nn.ReLU(inplace=True), conv7, nn.ReLU(inplace=True)]
     
     return nn.ModuleList(layers)
-
 
 def extras():
     layers = []
@@ -85,8 +87,38 @@ def locate_confidence(classes=21, bbox_aspect_ratios = [4, 6, 6, 6, 4, 4]):
     return nn.ModuleList(locate_layers), nn.ModuleList(confidence_layers)
 
 
+cfgs = {
+    "num_classes": 21,
+    "input_szie": 300,
+    "bbox_aspect_num": [4, 6, 6, 6, 4, 4],
+    "feature_maps": [38, 19, 10, 5, 3, 1],
+    "steps": [8, 16, 32, 64, 100, 300],
 
-    
+    "min_sizes": [30, 60, 111, 162, 213, 264], # min_sizes for default boxes
+    "max_sizes": [60, 111, 162, 213, 264, 315], # max_sizes for default boxes
+    "aspect_ratios": [[2], [2, 3], [2, 3], [2, 3], [2], [2]], # aspect ratios for default boxes
+}
+
+
+class SSD(nn.Module):
+    def __init__(self, phase, cfg):
+        super(SSD, self).__init__()
+        self.phase = phase
+        self.num_classes = cfg['num_classes']
+
+        # create main module
+        self.vgg = vgg()
+        self.extras = extras()
+        self.locate, self.confidence = locate_confidence(classes=self.num_classes, bbox_aspect_ratios=cfg['bbox_aspect_num'])
+        self.l2norm = L2Norm()
+
+        # create default box
+        dboxes = DefaultBox(cfgs=cfgs)
+        self.dbox_list = dboxes.create_default_box()
+
+        if phase == 'inference':
+            self.detect = Detect()
+        
 
 if __name__ == "__main__":
     # layers = create_vgg()
@@ -95,8 +127,12 @@ if __name__ == "__main__":
     # extra_layers = extras()
     # print(extra_layers)
      
-    locate_layers, confidence_layers = locate_confidence()
-    print(locate_layers, confidence_layers)
+    # locate_layers, confidence_layers = locate_confidence()
+    # print(locate_layers, confidence_layers)
+
+    ssd = SSD(phase='train', cfg=cfgs)
+
+    print(ssd)
 
     
     
