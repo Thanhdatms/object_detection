@@ -87,5 +87,20 @@ if __name__ == "__main__":
         anno_xml=AnnotationExtractor(classes)
     )
 
-    print(len(train_dataset))
-    print(train_dataset.__getitem__(1))
+    # print(len(train_dataset))
+    # print(train_dataset.__getitem__(1))
+
+    batch_size = 4
+    train_dataloader = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=my_collate_fn)
+    val_dataloader = data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=my_collate_fn)
+
+    dataloader_dict = {
+        "train": train_dataloader,
+        "val": val_dataloader
+    }
+
+    batch_iter = iter(dataloader_dict["val"])
+    images, targets = next(batch_iter) # get 1 sample
+    print(images.size()) 
+    print(len(targets))
+    print(targets[0].size()) # xmin, ymin, xmax, ymax, label
