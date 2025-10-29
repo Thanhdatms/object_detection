@@ -4,7 +4,6 @@ from  default_box import DefaultBox
 
 
 def vgg():
-
     layers = []
     in_channels = 3
 
@@ -118,7 +117,26 @@ class SSD(nn.Module):
 
         if phase == 'inference':
             self.detect = Detect()
-        
+
+
+def decode(loc, defbox_list):
+    """
+    parameters:
+    loc: [8732, 4] (delta_x, delta_y, delta_w, delta_h)
+    defbox_list: [8732, 4] (cx_d, cy_d, w_d, h_d)
+
+    returns:
+    boxes [xmin, ymin, xmax, ymax]
+    """
+
+    boxes = torch.cat((
+        defbox_list[:, :2] + 0.1*loc[:, :2]*defbox_list[:, 2:],
+        defbox_list[:, 2:]*torch.exp(loc[:,2:]*0.2)), dim=1)
+
+    boxes[:, :2] -= boxes[:,2:]/2 #calculate xmin, ymin
+    boxes[:, 2:] += boxes[:, :2] #calculate xmax, ymax
+
+    return boxes    
 
 if __name__ == "__main__":
     # layers = create_vgg()
