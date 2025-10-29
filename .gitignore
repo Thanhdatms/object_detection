@@ -16,3 +16,8 @@ __pypackages__
 dist
 build
 *.egg
+/src/__pycache__/
+/src/test
+
+src/__pycache__/
+src/test
