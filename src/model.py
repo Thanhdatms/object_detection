@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 from l2norm import L2Norm
 from  default_box import DefaultBox
 
@@ -138,6 +139,60 @@ def decode(loc, defbox_list):
 
     return boxes    
 
+def nms(boxes, scores, overlap=0.5, top_k=200):
+    """
+    boxes: the output boxes after decode [num_box, xmin, ymin, xmax, ymax]
+    scores: confidence score for each box [num_box]
+    overlap: threshold for nms 
+    top_k: maximum number of boxs to consider
+    returns:
+    """
+    count = 0
+    keep = []
+
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+
+    # calculate area of boxes
+    area = (x2 - x1).clamp(min=0) * (y2 - y1).clamp(min=0)
+
+    # sort scores and keep top_k highest score box
+    _, order = scores.sort(0) # sort in ascending order, sort(0): ascending, sort(1): descending
+    print("order:", order)
+    order = order[-top_k:] # select top_k highest score box
+
+    while order.numel() > 0:
+        idx = order[-1] # index of current highest score box
+        keep.append(idx.item())
+        count += 1
+
+        if order.numel() == 1:
+            break
+        order = order[:-1] # remove kept index from order
+
+        # intersection box
+        xx1 = torch.max(x1[idx], x1[order])
+        yy1 = torch.max(y1[idx], y1[order])
+        xx2 = torch.min(x2[idx], x2[order])
+        yy2 = torch.min(y2[idx], y2[order])
+
+        # clamp to minimum 0
+        w = (xx2 - xx1).clamp(min=0)
+        h = (yy2 - yy1).clamp(min=0)
+
+        inter = w * h
+        union = area[idx] + area[order] - inter
+
+        iou = inter / union
+
+        # keep boxes with overlap less than threshold
+        order = order[iou <= overlap]
+    
+    return torch.tensor(keep, dtype=torch.long), count
+
+
 if __name__ == "__main__":
     # layers = create_vgg()
     # print(layers)
@@ -148,9 +203,18 @@ if __name__ == "__main__":
     # locate_layers, confidence_layers = locate_confidence()
     # print(locate_layers, confidence_layers)
 
-    ssd = SSD(phase='train', cfg=cfgs)
+    # ssd = SSD(phase='train', cfg=cfgs)
+    # print(ssd)
 
-    print(ssd)
+    boxes = torch.tensor([  [12, 12, 22, 22],
+                            [30, 30, 40, 40],
+                            [10, 10, 20, 20],
+                            [10, 10, 20, 20],
+                        ])
+    scores = torch.tensor([0.9, 0.85, 0.8, 0.8])
+
+    keep, count = nms(boxes, scores, overlap=0.5, top_k=200)
+    print(keep, count)
 
     
     
