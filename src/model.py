@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 from l2norm import L2Norm
 from  default_box import DefaultBox
-
+from torch.autograd import Function
 
 def vgg():
     layers = []
@@ -191,6 +191,53 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
         order = order[iou <= overlap]
     
     return torch.tensor(keep, dtype=torch.long), count
+
+
+class Detect(Function):
+    def __init__(self, conf_thresh=0.01, nms_thresh=0.5, top_k=200):
+        self.soft_max = nn.Softmax(dim=-1)
+        self.conf_thresh = conf_thresh
+        self.nms_thresh = nms_thresh
+        self.top_k = top_k
+
+    # loc_data: (batch_size, 8732, 4) list location vector of each box (delta_x, delta_y, delta_w, delta_h)
+    # conf_data: (batch_size, 8732, num_classes) list label vector of each box
+    # dbox_list: (8732, 4) list default box
+    def forward(self, loc_data, conf_data, dbox_list):
+        # 
+        num_batch = loc_data.size(0) # batch size, how many image in a batch
+        num_dbox = loc_data.size(1) # 8732 box
+        num_classes = conf_data.size(2) # 21 classes
+
+        conf_data = self.soft_max(conf_data) # apply softmax to confidence score like [batch_size, 8732, num_classes]
+        # (batch_size, 8732, 21) -> (batch_size, num_classes, num_box)
+        conf_preds = conf_data.transpose(2, 1)
+
+        output = torch.zeros(num_batch, num_classes, self.top_k, 5) # (batch_size, num_classes, top_k, 5)
+        # Bao nhiêu ảnh trong 1 batch -> mỗi ảnh gồm bao nhiêu class -> mỗi class sẽ có top k box -> mỗi box gồm (score, xmin, ymin, xmax, ymax)
+        for i in range(num_batch):
+            # decode bbox from offset and default box
+            decoded_boxes = decode(loc_data[i], dbox_list)
+
+            conf_scores = conf_preds[i] # (num_classes, num_box)
+            for cls in range(1, num_classes):
+
+                # create mask to get score for confidence score greater than threshold
+                score_mask = conf_scores[cls].gt(self.conf_thresh)
+                scores = conf_scores[cls][score_mask]
+                if scores.numel() == 0:
+                    continue
+            
+                # create mask to get location box for confidence score greater than threshold
+                box_mask = score_mask.unsqueeze(1).expand_as(decoded_boxes) # (8732, 4)
+                boxes = decoded_boxes[box_mask].view(-1, 4)
+
+                # apply nms
+                ids, count = nms(boxes, scores, self.nms_thresh, self.top_k)
+
+                output[i, cls, :count] = torch.cat((scores[ids[:count]].unsqueeze(1), boxes[ids[:count]]), dim=1)
+
+        return output
 
 
 if __name__ == "__main__":
