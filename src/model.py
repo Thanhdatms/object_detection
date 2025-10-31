@@ -119,6 +119,53 @@ class SSD(nn.Module):
         if phase == 'inference':
             self.detect = Detect()
 
+    def forward(self, x):
+        sources = []
+        locate = []
+        confidence = []
+
+        # apply vgg up to conv4_3 relu
+        for k in range(23):
+            x = self.vgg[k](x)
+
+        source_1 = self.l2norm(x)
+        sources.append(source_1)
+
+        for k in range(23, len(self.vgg)):
+            x = self.vgg[k](x)
+        
+        # append source_2
+        sources.append(x)
+
+        for k in range(0, len(self.extras), 2):
+            # apply source 3, 4, 5, 6
+            x = self.extras[k](x)
+            x = nn.ReLU(inplace=True)(x)
+            x = self.extras[k+1](x)
+            x = nn.ReLU(inplace=True)(x)
+            sources.append(x)
+
+        # apply locate and confidence head to source layers
+        for (src, loc, conf) in zip(sources, self.locate, self.confidence):
+            # aspect ratio num is 4, 6, 6, 6, 4, 4
+            locate.append(loc(src).permute(0, 2, 3, 1).contiguous())
+            confidence.append(conf(src).permute(0, 2, 3, 1).contiguous())
+        
+        # Neu khong co contiguous thi se bi loi khi view
+        locate = torch.cat([loc.view(loc.size(0), -1) for loc in locate], dim=1) # (batch_size, 8732*4)
+        confidence = torch.cat([conf.view(conf.size(0), -1) for loc in confidence], dim=1)
+
+        locate = locate.view(locate.size(0), -1, 4) # batch_size, 8732, 4
+        confidence = confidence.view(confidence.size(0),-1, self.num_classes) # batch_size, 8732, num_classes
+
+        output = (locate, confidence, self.dbox_list)
+
+        if self.phase ==  "inference": # during inference, apply detect function to locate, confidence and dbox_list
+            with torch.no_grad():
+                return self.detect(output[0], output[1], output[2]) # locate, confidence, dbox_list
+        else:
+            return output # during training, return locate, confidence, dbox_list
+
 
 def decode(loc, defbox_list):
     """
