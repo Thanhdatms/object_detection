@@ -6,7 +6,7 @@ import pandas as pd
 # config for test in main
 cfgs = {
     "num_classes": 21,
-    "input_szie": 300,
+    "input_size": 300,
     "bbox_aspect_num": [4, 6, 6, 6, 4, 4],
     "feature_maps": [38, 19, 10, 5, 3, 1],
     "steps": [8, 16, 32, 64, 100, 300],
@@ -19,7 +19,7 @@ cfgs = {
 
 class DefaultBox():
     def __init__(self, cfgs):
-        self.img_size = cfgs["input_szie"]
+        self.img_size = cfgs["input_size"]
         self.feature_maps = cfgs["feature_maps"]
         self.min_sizes = cfgs["min_sizes"]
         self.max_sizes = cfgs["max_sizes"]

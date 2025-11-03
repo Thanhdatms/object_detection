@@ -10,7 +10,7 @@ def vgg():
 
     cfgs = [64, 64, 'M', 
            128, 128, 'M',
-           256, 256, 256, 'M',
+           256, 256, 256, 'MC',
            512, 512, 512, 'M',
            512, 512, 512
         ]
@@ -89,14 +89,13 @@ def locate_confidence(classes=21, bbox_aspect_ratios = [4, 6, 6, 6, 4, 4]):
 
 cfgs = {
     "num_classes": 21,
-    "input_szie": 300,
+    "input_size": 300,
     "bbox_aspect_num": [4, 6, 6, 6, 4, 4],
     "feature_maps": [38, 19, 10, 5, 3, 1],
     "steps": [8, 16, 32, 64, 100, 300],
-
-    "min_sizes": [30, 60, 111, 162, 213, 264], # min_sizes for default boxes
-    "max_sizes": [60, 111, 162, 213, 264, 315], # max_sizes for default boxes
-    "aspect_ratios": [[2], [2, 3], [2, 3], [2, 3], [2], [2]], # aspect ratios for default boxes
+    "min_sizes": [30, 60, 111, 162, 213, 264],
+    "max_sizes": [60, 111, 162, 213, 264, 315],
+    "aspect_ratios": [[2], [2, 3], [2, 3], [2, 3], [2], [2]],
 }
 
 
@@ -153,7 +152,7 @@ class SSD(nn.Module):
         
         # Neu khong co contiguous thi se bi loi khi view
         locate = torch.cat([loc.view(loc.size(0), -1) for loc in locate], dim=1) # (batch_size, 8732*4)
-        confidence = torch.cat([conf.view(conf.size(0), -1) for loc in confidence], dim=1)
+        confidence = torch.cat([conf.view(conf.size(0), -1) for conf in confidence], dim=1)
 
         locate = locate.view(locate.size(0), -1, 4) # batch_size, 8732, 4
         confidence = confidence.view(confidence.size(0),-1, self.num_classes) # batch_size, 8732, num_classes

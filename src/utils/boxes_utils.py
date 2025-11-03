@@ -65,6 +65,9 @@ def jaccard(box_a, box_b):
     area_b = ((box_b[:, 2]-box_b[:, 0]) *
               (box_b[:, 3]-box_b[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
     union = area_a + area_b - inter
+    # avoid division by zero
+    eps = 1e-6
+    union = torch.clamp(union, min=eps)
     return inter / union  # [A,B]
 
 
@@ -124,17 +127,26 @@ def encode(matched, priors, variances):
     Return:
         encoded boxes (tensor), Shape: [num_priors, 4]
     """
+    eps = 1e-6
+    # ensure priors widths/heights are not zero
+    prior_wh = priors[:, 2:].clone()
+    prior_wh = torch.clamp(prior_wh, min=eps)
 
-    # dist b/t match center and prior's center
-    g_cxcy = (matched[:, :2] + matched[:, 2:])/2 - priors[:, :2]
-    # encode variance
-    g_cxcy /= (variances[0] * priors[:, 2:])
-    # match wh / prior wh
-    g_wh = (matched[:, 2:] - matched[:, :2]) / priors[:, 2:]
-    g_wh = torch.log(g_wh) / variances[1]
-    # return target for smooth_l1_loss
+    # center diff
+    g_cxcy = (matched[:, :2] + matched[:, 2:]) / 2 - priors[:, :2]
+    # divide by (variances[0] * prior_wh)
+    g_cxcy = g_cxcy / (variances[0] * prior_wh)
+
+    # width / height: ensure matched wh positive and not zero
+    matched_wh = (matched[:, 2:] - matched[:, :2]).clone()
+    matched_wh = torch.clamp(matched_wh, min=eps)
+
+    g_wh = matched_wh / prior_wh
+    # safe log
+    g_wh = torch.log(g_wh)
+    g_wh = g_wh / variances[1]
+
     return torch.cat([g_cxcy, g_wh], 1)  # [num_priors,4]
-
 
 # Adapted from https://github.com/Hakuyume/chainer-ssd
 def decode(loc, priors, variances):
