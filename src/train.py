@@ -66,7 +66,7 @@ cfgs = {
     "aspect_ratios": [[2], [2, 3], [2, 3], [2, 3], [2], [2]], # aspect ratios for default boxes
 }
 
-net = SSD(phase='train', cfg=cfgs)
+net = SSD(phase='train', cfg=cfgs).to(device)
 
 vgg_weight = torch.load(
     "./datasets/weights/vgg16_reducedfc.pth",
