@@ -31,7 +31,7 @@ data_transform = DataTransform(input_size=input_size, color_mean=color_mean)
 train_dataset = MyDataSet(train_img_list, train_anno_list, phase='train', transform=data_transform, anno_xml=AnnotationExtractor(classes))
 val_dataset = MyDataSet(val_img_list, val_anno_list, phase='val', transform=data_transform, anno_xml=AnnotationExtractor(classes))
 
-batch_size = 2
+batch_size = 32
 train_dataloader = data.DataLoader(
                                 dataset=train_dataset, 
                                 batch_size=batch_size, 
@@ -296,7 +296,7 @@ def train_model(net, dataloader_dict, criterion, epochs):
                         optimizer.step()
 
                         # logging
-                        if iteration % 2 == 0:
+                        if iteration % 50 == 0:
                             print(f"Iteration {iteration} || Loss {loss.item():.4f}")
 
                         epoch_train_loss += loss.item()
