@@ -68,10 +68,7 @@ cfgs = {
 
 net = SSD(phase='train', cfg=cfgs).to(device)
 
-vgg_weight = torch.load(
-    "./datasets/weights/vgg16_reducedfc.pth",
-    map_location=device
-)
+vgg_weight = torch.load("./datasets/weights/vgg16_reducedfc.pth", map_location="cpu")
 
 net.vgg.load_state_dict(vgg_weight)
 
