@@ -315,11 +315,11 @@ def train_model(net, dataloader_dict, criterion, epochs):
             "train_loss": epoch_train_loss,
             "val_loss": epoch_val_loss
         })
-        pd.DataFrame(logs).to_csv("./data/ssd_loss.csv", index=False)
+        pd.DataFrame(logs).to_csv("./datasets/ssd_loss.csv", index=False)
 
         # save checkpoint periodically
         if (epoch+1) % 10 == 0:
-            torch.save(net.state_dict(), f"./data/weights/ssd300_epoch{epoch+1}.pth")
+            torch.save(net.state_dict(), f"./datasets/weights/ssd300_epoch{epoch+1}.pth")
 
     print("Training finished.")
     
