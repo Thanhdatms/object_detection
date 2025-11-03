@@ -24,7 +24,7 @@ def make_datapath(root_path):
 
 
     for val in open(val_id_names):
-        val_id = train.strip()
+        val_id = val.strip()
 
         img_path = (img_path_template % val_id)
         anno_path = (annotation_path_template % val_id)
