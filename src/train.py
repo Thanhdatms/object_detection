@@ -323,7 +323,7 @@ def train_model(net, dataloader_dict, criterion, epochs):
 
     print("Training finished.")
     
-num_epoch = 5
+num_epoch = 32
 train_model(net=net, dataloader_dict=dataloader_dict, criterion=criterion, epochs=num_epoch)
 
 
