@@ -23,11 +23,18 @@ class DataTransform:
                 SubtractMeans(color_mean)# related to color BGR 
             ]),
 
+            # "val": Compose([
+            #     ConvertFromInts(),
+            #     ToPercentCoords(),
+            #     Resize(size=input_size),
+            #     SubtractMeans(mean=color_mean)
+            # ])
             "val": Compose([
                 ConvertFromInts(),
+                ToAbsoluteCoords(),
+                Resize(input_size),
                 ToPercentCoords(),
-                Resize(size=input_size),
-                SubtractMeans(mean=color_mean)
+                SubtractMeans(color_mean)
             ])
         }
 
